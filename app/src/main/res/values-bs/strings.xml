@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pristupačna Zenica</string> <string name="mapbox_access_token">pk.eyJ1IjoiZW1pcjAwMiIsImEiOiJjbThoOTlmaDAwdnRyMmpxeGs5Zzg2c3p2In0.d5JwuQo82-nUZIA6Hm1Z_w</string>
+
+    <string name="menu_title">Meni</string>
+    <string name="menu_home">Početna</string>
+    <string name="menu_settings">Postavke</string>
+    <string name="menu_about">O aplikaciji</string>
+
+    <string name="loading_text">Učitavanje, molimo sačekajte…</string>
+    <string name="permission_request_text">Dozvola za lokaciju je potrebna za funkcionalnosti mape.</string>
+    <string name="permission_grant_button">Dozvoli</string>
+
+    <string name="settings_title">Postavke</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_system">Sistemska</string>
+    <string name="settings_theme_light">Svijetla</string>
+    <string name="settings_theme_dark">Tamna</string>
+    <string name="settings_permissions">Dozvole</string>
+    <string name="settings_permissions_status">Status dozvole za lokaciju: %1$s</string>
+    <string name="settings_permissions_granted">Dozvoljeno</string>
+    <string name="settings_permissions_not_granted">Nije dozvoljeno</string>
+    <string name="settings_map_display">Prikaz mape</string>
+    <string name="settings_pin_size">Veličina pina</string>
+    <string name="settings_text_size">Veličina teksta znamenitosti</string>
+    <string name="settings_restore_default">Vrati na početno</string>
+    <string name="settings_language">Jezik</string>
+
+    <string name="about_title">O aplikaciji</string>
+    <string name="about_version">Verzija 1.0 (2025)</string>
+    <string name="about_developed_by">Razvijeno od strane GraphForge © Emir Hasanica</string>
+    <string name="about_contact">emir002@yahoo.com</string>
+    <string name="about_mapbox_info">Ova aplikacija koristi Mapbox za usluge mapiranja.</string>
+
+    <string name="landmark_popup_info_prefix">Info:</string>
+    <string name="landmark_popup_details_prefix">Detalji:</string>
+    <string name="landmark_popup_close_button">Zatvori</string>
+    <string name="landmark_image_description">%1$s slika</string>
+
+    <string name="center_map_button_description">Centriraj na moju lokaciju</string>
+    <string name="loading_landmarks">Učitavanje znamenitosti...</string>
+
+    <string name="legend_fully_accessible">Potpuno pristupačno</string>
+    <string name="legend_partially_accessible">Djelimično pristupačno</string>
+    <string name="legend_inaccessible">Nepristupačno</string>
+
+    <string name="startup_warning_title">Prvo pokretanje</string>
+    <string name="startup_warning_message">Aplikacija se starta prvi put. Mapa će biti preuzeta na Vaš uređaj, što može dovesti do potrošnje podataka. Želite li nastaviti?</string>
+    <string name="startup_warning_ok">U redu</string>
+    <string name="startup_warning_cancel">Otkaži</string>
+
+</resources>

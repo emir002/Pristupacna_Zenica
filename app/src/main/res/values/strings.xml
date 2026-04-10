@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pristupačna Zenica</string> <string name="mapbox_access_token">pk.eyJ1IjoiZW1pcjAwMiIsImEiOiJjbThoOTlmaDAwdnRyMmpxeGs5Zzg2c3p2In0.d5JwuQo82-nUZIA6Hm1Z_w</string>
+
+    <string name="menu_title">Menu</string>
+    <string name="menu_home">Home</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_about">About</string>
+
+    <string name="loading_text">Loading, please wait…</string>
+    <string name="permission_request_text">Location permission is required for map features.</string>
+    <string name="permission_grant_button">Grant Permission</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_permissions">Permissions</string>
+    <string name="settings_permissions_status">Location permission status: %1$s</string>
+    <string name="settings_permissions_granted">Granted</string>
+    <string name="settings_permissions_not_granted">Not Granted</string>
+    <string name="settings_map_display">Map Display</string>
+    <string name="settings_pin_size">Pin Size</string>
+    <string name="settings_text_size">Landmark Text Size</string>
+    <string name="settings_restore_default">Restore Default</string>
+    <string name="settings_language">Language</string>
+
+
+    <string name="about_title">About</string>
+    <string name="about_version">Version 1.0 (2025)</string>
+    <string name="about_developed_by">Developed by GraphForge © Emir Hasanica</string>
+    <string name="about_contact">emir002@yahoo.com</string>
+    <string name="about_mapbox_info">This app uses Mapbox for mapping services.</string>
+
+    <string name="landmark_popup_info_prefix">Info:</string>
+    <string name="landmark_popup_details_prefix">Details:</string>
+    <string name="landmark_popup_close_button">Close</string>
+    <string name="landmark_image_description">%1$s image</string>
+
+    <string name="center_map_button_description">Center on my location</string>
+    <string name="loading_landmarks">Loading landmarks...</string>
+
+    <string name="legend_fully_accessible">Fully Accessible</string>
+    <string name="legend_partially_accessible">Partially Accessible</string>
+    <string name="legend_inaccessible">Inaccessible</string>
+
+    <string name="startup_warning_title">First Launch</string>
+    <string name="startup_warning_message">The application is starting for the first time. The map will be downloaded to your device, which may lead to data consumption. Do you want to continue?</string>
+    <string name="startup_warning_ok">OK</string>
+    <string name="startup_warning_cancel">Cancel</string>
+
+</resources>

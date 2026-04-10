@@ -1,0 +1,5 @@
+-- SQL script for populating landmarks table --
+INSERT INTO landmarks (category, name, detailLine1, detailLine2, longitude, latitude, imageName) VALUES ('blue', 'Lamela', 'Puni pristup, lift za sve spratove', 'Parking u blizini', 17.90745856928516, 44.204215587921176, 'landmark_a_image');
+INSERT INTO landmarks (category, name, detailLine1, detailLine2, longitude, latitude, imageName) VALUES ('blue', 'Bosanka', 'Puni pristup, lift', 'Ulaz sa rampom sa jugozapadne strane sa šetališta', 17.912580662731354, 44.198852002364305, 'landmark_b_image');
+INSERT INTO landmarks (category, name, detailLine1, detailLine2, longitude, latitude, imageName) VALUES ('yellow', 'Shopping City', 'Djelimičan pristup', 'Nedostatak parking mjesta', 17.912761659838043, 44.203091235198436, 'a160');
+INSERT INTO landmarks (category, name, detailLine1, detailLine2, longitude, latitude, imageName) VALUES ('red', 'Gradski stadion', 'Nema pristupa na tribine', NULL, 17.90737211748987, 44.20589256148399, 'bilinopolje');
