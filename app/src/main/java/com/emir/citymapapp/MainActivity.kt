@@ -70,16 +70,13 @@ class MainActivity : AppCompatActivity() { // CHANGED: Inherit from AppCompatAct
         }
 
         setContent {
-            val currentLocaleCode by settingsPreferences.localeSetting
-                .collectAsState(initial = SettingsPreferences.DEFAULT_LOCALE)
             val currentThemeSetting by settingsPreferences.themeSetting
                 .collectAsState(initial = ThemeSetting.SYSTEM)
             val startupWarningAccepted by settingsPreferences.startupWarningAccepted
-                .collectAsState(initial = null)
+                .collectAsState(initial = false)
 
             CityMapAppTheme(themeSetting = currentThemeSetting) {
                 when (startupWarningAccepted) {
-                    null -> LoadingScreen()
                     false -> StartupWarningDialogWrapper(settingsPreferences) { finish() }
                     true -> {
                         LaunchedEffect(Unit) {

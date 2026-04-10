@@ -17,7 +17,6 @@ pluginManagement {
     val mapboxToken: String =
         providers.gradleProperty("MAPBOX_DOWNLOADS_TOKEN")
             .orElse(System.getenv("MAPBOX_DOWNLOADS_TOKEN"))
-            .forUseAtConfigurationTime()
             .get()
 
     repositories {
@@ -47,7 +46,6 @@ dependencyResolutionManagement {
     val mapboxToken: String =
         providers.gradleProperty("MAPBOX_DOWNLOADS_TOKEN")
             .orElse(System.getenv("MAPBOX_DOWNLOADS_TOKEN"))
-            .forUseAtConfigurationTime()
             .get()
 
     repositories {
