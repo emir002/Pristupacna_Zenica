@@ -163,6 +163,8 @@ fun MapboxComposeView(
         remember { annotationApi.createPointAnnotationManager(AnnotationConfig("user_layer")) }
     val landmarkAnnotationManager =
         remember { annotationApi.createPointAnnotationManager(AnnotationConfig("landmark_layer")) }
+    val annotationsById = remember { mutableMapOf<String, Landmark>() }
+    var isLandmarkClickListenerAttached by remember { mutableStateOf(false) }
 
     /* Track user location and zoom once */
     var hasZoomedToUser by remember { mutableStateOf(false) }
@@ -258,11 +260,19 @@ fun MapboxComposeView(
 
                     landmarkAnnotationManager.deleteAll()
 
-                    val annotationsById = mutableMapOf<String, Landmark>()
-                    landmarkAnnotationManager.addClickListener { pa ->
-                        annotationsById[pa.id]?.let(onLandmarkClick)
-                        true
+                    if (!isLandmarkClickListenerAttached) {
+                        landmarkAnnotationManager.addClickListener { pa ->
+                            annotationsById[pa.id]?.let {
+                                onLandmarkClick(it)
+                                true
+                            } ?: false
+                        }
+                        isLandmarkClickListenerAttached = true
                     }
+                    annotationsById.clear()
+
+                    val groupedByCoordinate = landmarks.groupBy { it.point.toJson() }
+                    val currentIndexByCoordinate = mutableMapOf<String, Int>()
 
                     val groupedByCoordinate = landmarks.groupBy { it.point.toJson() }
                     val currentIndexByCoordinate = mutableMapOf<String, Int>()
