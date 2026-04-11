@@ -274,6 +274,9 @@ fun MapboxComposeView(
                     val groupedByCoordinate = landmarks.groupBy { it.point.toJson() }
                     val currentIndexByCoordinate = mutableMapOf<String, Int>()
 
+                    val groupedByCoordinate = landmarks.groupBy { it.point.toJson() }
+                    val currentIndexByCoordinate = mutableMapOf<String, Int>()
+
                     landmarks.forEach { lm ->
                         val icon = when (lm.category.lowercase()) {
                             "red" -> "ic_landmark_red"
