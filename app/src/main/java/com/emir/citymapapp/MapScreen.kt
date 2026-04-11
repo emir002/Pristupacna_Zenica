@@ -121,14 +121,14 @@ fun MapScreen(
         .collectAsState(initial = SettingsPreferences.DEFAULT_TEXT_SIZE)
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        if (landmarks.isNotEmpty()) {
-            MapboxComposeView(
-                landmarks = landmarks,
-                pinSize = pinSize,
-                textSize = textSize,
-                onLandmarkClick = onLandmarkClick
-            )
-        } else {
+        MapboxComposeView(
+            landmarks = landmarks,
+            pinSize = pinSize,
+            textSize = textSize,
+            onLandmarkClick = onLandmarkClick
+        )
+
+        if (landmarks.isEmpty()) {
             CircularProgressIndicator()
         }
     }
