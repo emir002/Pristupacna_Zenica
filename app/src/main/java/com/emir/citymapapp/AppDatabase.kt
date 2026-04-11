@@ -10,7 +10,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.concurrent.Executors
 
-@Database(entities = [LandmarkEntity::class], version = 1, exportSchema = false)
+@Database(entities = [LandmarkEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun landmarkDao(): LandmarkDao
@@ -27,6 +27,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "citymap_database"
                 )
                     .addCallback(PrepopulateCallback(context)) // Add the callback here
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
