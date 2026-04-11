@@ -10,7 +10,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.concurrent.Executors
 
-@Database(entities = [LandmarkEntity::class], version = 1, exportSchema = false)
+@Database(entities = [LandmarkEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun landmarkDao(): LandmarkDao
@@ -27,6 +27,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "citymap_database"
                 )
                     .addCallback(PrepopulateCallback(context)) // Add the callback here
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
@@ -39,10 +40,23 @@ abstract class AppDatabase : RoomDatabase() {
 private class PrepopulateCallback(private val context: Context) : RoomDatabase.Callback() {
     override fun onCreate(db: SupportSQLiteDatabase) {
         super.onCreate(db)
-        // Use a background thread for pre-population
+        prepopulateIfEmpty(db)
+    }
+
+    override fun onOpen(db: SupportSQLiteDatabase) {
+        super.onOpen(db)
+        prepopulateIfEmpty(db)
+    }
+
+    private fun prepopulateIfEmpty(db: SupportSQLiteDatabase) {
         Executors.newSingleThreadExecutor().execute {
             try {
-                // Open the SQL file from assets
+                val cursor = db.query("SELECT COUNT(*) FROM landmarks")
+                val hasLandmarks = cursor.use {
+                    it.moveToFirst() && it.getInt(0) > 0
+                }
+                if (hasLandmarks) return@execute
+
                 val inputStream = context.assets.open("landmarks.sql")
                 val reader = BufferedReader(InputStreamReader(inputStream))
                 var line: String?
@@ -52,22 +66,18 @@ private class PrepopulateCallback(private val context: Context) : RoomDatabase.C
                     while (reader.readLine().also { line = it } != null) {
                         val sqlStatement = line?.trim()
                         if (!sqlStatement.isNullOrEmpty() && !sqlStatement.startsWith("--")) {
-                            // Only execute if it's not empty and not a comment
                             db.execSQL(sqlStatement)
                         }
                     }
                     db.setTransactionSuccessful()
                 } finally {
                     db.endTransaction()
+                    reader.close()
+                    inputStream.close()
                 }
-
-                reader.close()
-                inputStream.close()
-                println("Database pre-populated successfully!")
             } catch (e: Exception) {
                 println("Error pre-populating database: ${e.message}")
                 e.printStackTrace()
-                // Handle error: Maybe log it or throw a custom exception
             }
         }
     }

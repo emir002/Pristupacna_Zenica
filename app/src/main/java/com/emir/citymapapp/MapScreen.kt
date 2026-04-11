@@ -49,6 +49,9 @@ import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.gestures
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.map
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import android.graphics.Color as AndroidColor
 
 /* -------------------------------------------------------------------- */
@@ -118,14 +121,14 @@ fun MapScreen(
         .collectAsState(initial = SettingsPreferences.DEFAULT_TEXT_SIZE)
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        if (landmarks.isNotEmpty()) {
-            MapboxComposeView(
-                landmarks = landmarks,
-                pinSize = pinSize,
-                textSize = textSize,
-                onLandmarkClick = onLandmarkClick
-            )
-        } else {
+        MapboxComposeView(
+            landmarks = landmarks,
+            pinSize = pinSize,
+            textSize = textSize,
+            onLandmarkClick = onLandmarkClick
+        )
+
+        if (landmarks.isEmpty()) {
             CircularProgressIndicator()
         }
     }
@@ -160,6 +163,8 @@ fun MapboxComposeView(
         remember { annotationApi.createPointAnnotationManager(AnnotationConfig("user_layer")) }
     val landmarkAnnotationManager =
         remember { annotationApi.createPointAnnotationManager(AnnotationConfig("landmark_layer")) }
+    val annotationsById = remember { mutableMapOf<String, Landmark>() }
+    var isLandmarkClickListenerAttached by remember { mutableStateOf(false) }
 
     /* Track user location and zoom once */
     var hasZoomedToUser by remember { mutableStateOf(false) }
@@ -255,11 +260,19 @@ fun MapboxComposeView(
 
                     landmarkAnnotationManager.deleteAll()
 
-                    val landmarkMap = landmarks.associateBy { it.point.toJson() }
-                    landmarkAnnotationManager.addClickListener { pa ->
-                        landmarkMap[pa.point.toJson()]?.let(onLandmarkClick)
-                        true
+                    if (!isLandmarkClickListenerAttached) {
+                        landmarkAnnotationManager.addClickListener { pa ->
+                            annotationsById[pa.id]?.let {
+                                onLandmarkClick(it)
+                                true
+                            } ?: false
+                        }
+                        isLandmarkClickListenerAttached = true
                     }
+                    annotationsById.clear()
+
+                    val groupedByCoordinate = landmarks.groupBy { it.point.toJson() }
+                    val currentIndexByCoordinate = mutableMapOf<String, Int>()
 
                     landmarks.forEach { lm ->
                         val icon = when (lm.category.lowercase()) {
@@ -268,8 +281,24 @@ fun MapboxComposeView(
                             else -> "ic_landmark_blue"
                         }
 
+                        val coordinateKey = lm.point.toJson()
+                        val currentIndex = currentIndexByCoordinate.getOrDefault(coordinateKey, 0)
+                        currentIndexByCoordinate[coordinateKey] = currentIndex + 1
+                        val duplicatesAtPoint = groupedByCoordinate[coordinateKey]?.size ?: 1
+
+                        val renderedPoint = if (duplicatesAtPoint > 1) {
+                            val angle = (2 * PI * currentIndex) / duplicatesAtPoint
+                            val offset = 0.00018 // ~20 m to separate overlapping pins
+                            Point.fromLngLat(
+                                lm.point.longitude() + (offset * cos(angle)),
+                                lm.point.latitude() + (offset * sin(angle))
+                            )
+                        } else {
+                            lm.point
+                        }
+
                         val opts = PointAnnotationOptions()
-                            .withPoint(lm.point)
+                            .withPoint(renderedPoint)
                             .withTextField(lm.title)
                             .withIconImage(icon)
                             .withIconSize(pinSize.toDouble()) // Use pinSize
@@ -280,7 +309,8 @@ fun MapboxComposeView(
                             .withTextHaloColor(AndroidColor.WHITE)
                             .withTextHaloWidth(1.5)
 
-                        landmarkAnnotationManager.create(opts)
+                        val annotation = landmarkAnnotationManager.create(opts)
+                        annotationsById[annotation.id] = lm
                     }
                 }
 
