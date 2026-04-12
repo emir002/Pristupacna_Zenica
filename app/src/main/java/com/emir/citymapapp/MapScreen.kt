@@ -93,6 +93,7 @@ private const val LANDMARK_CLUSTER_CIRCLE_LAYER_ID = "landmark-cluster-circle-la
 private const val LANDMARK_CLUSTER_COUNT_LAYER_ID = "landmark-cluster-count-layer"
 private const val LANDMARK_MARKER_LAYER_ID = "landmark-marker-layer"
 private const val LANDMARK_LABEL_LAYER_ID = "landmark-label-layer"
+private const val LANDMARK_HIT_LAYER_ID = "landmark-hit-layer"
 
 private const val CLUSTER_MAX_ZOOM = 13.5
 private const val LABEL_MIN_ZOOM = 15.5
@@ -286,7 +287,7 @@ fun MapboxComposeView(
 
                 mapboxMap.queryRenderedFeatures(
                     RenderedQueryGeometry(screenCoordinate),
-                    com.mapbox.maps.RenderedQueryOptions(listOf(LANDMARK_MARKER_LAYER_ID), null)
+                    com.mapbox.maps.RenderedQueryOptions(listOf(LANDMARK_HIT_LAYER_ID), null)
                 ) { markerResult ->
                     val markerFeature = markerResult.value?.firstOrNull()?.queriedFeature?.feature
                     val landmarkId = markerFeature?.getNumberProperty("landmarkId")?.toInt()
@@ -437,8 +438,8 @@ private fun setupLandmarkLayers(style: Style) {
                 minZoom(CLUSTER_MAX_ZOOM)
                 iconImage(get("iconImage"))
                 iconSize(1.0)
-                iconAllowOverlap(false)
-                iconIgnorePlacement(false)
+                iconAllowOverlap(true)
+                iconIgnorePlacement(true)
                 iconAnchor(IconAnchor.BOTTOM)
                 iconPitchAlignment(IconPitchAlignment.MAP)
                 iconRotationAlignment(IconRotationAlignment.MAP)
@@ -466,6 +467,19 @@ private fun setupLandmarkLayers(style: Style) {
                 textIgnorePlacement(false)
                 textPitchAlignment(TextPitchAlignment.MAP)
                 textRotationAlignment(TextRotationAlignment.MAP)
+            }
+        )
+    }
+
+
+    if (style.getLayer(LANDMARK_HIT_LAYER_ID) == null) {
+        style.addLayer(
+            circleLayer(LANDMARK_HIT_LAYER_ID, LANDMARK_SOURCE_ID) {
+                filter(not { has("point_count") })
+                minZoom(CLUSTER_MAX_ZOOM)
+                circleRadius(16.0)
+                circleColor("#000000")
+                circleOpacity(0.01)
             }
         )
     }
