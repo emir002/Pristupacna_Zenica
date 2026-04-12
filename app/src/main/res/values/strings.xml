@@ -44,6 +44,7 @@
     <string name="legend_fully_accessible">Fully Accessible</string>
     <string name="legend_partially_accessible">Partially Accessible</string>
     <string name="legend_inaccessible">Inaccessible</string>
+    <string name="landmark_status_label">Accessibility status:</string>
 
     <string name="startup_warning_title">First Launch</string>
     <string name="startup_warning_message">The application is starting for the first time. The map will be downloaded to your device, which may lead to data consumption. Do you want to continue?</string>
