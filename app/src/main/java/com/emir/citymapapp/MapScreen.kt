@@ -1,5 +1,4 @@
 package com.emir.citymapapp
-// MapScreen.kt
 
 import android.Manifest
 import android.content.Context
@@ -9,20 +8,34 @@ import android.graphics.BitmapFactory
 import android.os.Looper
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GpsFixed // Using GpsFixed for location
+import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -35,28 +48,55 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.mapbox.geojson.Feature
+import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
+import com.mapbox.maps.RenderedQueryGeometry
+import com.mapbox.maps.RenderedQueryOptions
 import com.mapbox.maps.Style
+import com.mapbox.maps.extension.style.expressions.dsl.generated.get
+import com.mapbox.maps.extension.style.expressions.dsl.generated.has
+import com.mapbox.maps.extension.style.expressions.dsl.generated.literal
+import com.mapbox.maps.extension.style.expressions.generated.Expression
+import com.mapbox.maps.extension.style.layers.addLayer
+import com.mapbox.maps.extension.style.layers.generated.CircleLayer
+import com.mapbox.maps.extension.style.layers.generated.SymbolLayer
 import com.mapbox.maps.extension.style.layers.properties.generated.TextAnchor
+import com.mapbox.maps.extension.style.sources.addSource
+import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
+import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.plugin.annotation.AnnotationConfig
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotation
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
-import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
+import com.mapbox.maps.plugin.gestures.OnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.map
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
-import android.graphics.Color as AndroidColor
 
-/* -------------------------------------------------------------------- */
-/* ------------------  Data class & small utilities  ------------------ */
-/* -------------------------------------------------------------------- */
+private const val LANDMARK_SOURCE_ID = "landmarks-source"
+private const val CLUSTER_CIRCLE_LAYER_ID = "landmarks-cluster-circle-layer"
+private const val CLUSTER_COUNT_LAYER_ID = "landmarks-cluster-count-layer"
+private const val LANDMARK_ICON_LAYER_BLUE_ID = "landmarks-icon-blue-layer"
+private const val LANDMARK_ICON_LAYER_YELLOW_ID = "landmarks-icon-yellow-layer"
+private const val LANDMARK_ICON_LAYER_RED_ID = "landmarks-icon-red-layer"
+private const val LANDMARK_LABEL_LAYER_ID = "landmarks-label-layer"
+
+private const val MEDIUM_ZOOM_MIN = 13.5
+private const val LABEL_ZOOM_MIN = 15.5
+private const val CLUSTER_ZOOM_MAX = 13.5
+
+private const val CLUSTER_TAP_ZOOM_STEP = 2.0
+private data class LandmarkStyleRefs(
+    val source: GeoJsonSource,
+    val blueLayer: SymbolLayer,
+    val yellowLayer: SymbolLayer,
+    val redLayer: SymbolLayer,
+    val labelLayer: SymbolLayer
+)
 
 data class Landmark(
     val id: Int,
@@ -68,16 +108,15 @@ data class Landmark(
     val detailLine2: String? = null
 )
 
-fun LandmarkEntity.toLandmark(): Landmark =
-    Landmark(
-        id = id,
-        title = name,
-        details = detailLine1,
-        point = Point.fromLngLat(longitude, latitude),
-        category = category,
-        popupImageName = imageName,
-        detailLine2 = detailLine2
-    )
+fun LandmarkEntity.toLandmark(): Landmark = Landmark(
+    id = id,
+    title = name,
+    details = detailLine1,
+    point = Point.fromLngLat(longitude, latitude),
+    category = category,
+    popupImageName = imageName,
+    detailLine2 = detailLine2
+)
 
 @Composable
 fun getDrawableResourceIdByName(imageName: String?): Int? {
@@ -97,10 +136,6 @@ fun loadScaledBitmap(context: Context, resId: Int, width: Int, height: Int): Bit
         null
     }
 
-/* -------------------------------------------------------------------- */
-/* ---------------------------  Map Screen  --------------------------- */
-/* -------------------------------------------------------------------- */
-
 @Composable
 fun MapScreen(
     settingsPreferences: SettingsPreferences,
@@ -109,12 +144,10 @@ fun MapScreen(
     val context = LocalContext.current
     val dao = remember { AppDatabase.getDatabase(context).landmarkDao() }
 
-    /* --- Landmarks from DB ------------------------------------------ */
     val landmarks by dao.getAllLandmarks()
         .map { it.map(LandmarkEntity::toLandmark) }
         .collectAsState(initial = emptyList())
 
-    /* --- User-tunable map settings ---------------------------------- */
     val pinSize by settingsPreferences.pinSizeSetting
         .collectAsState(initial = SettingsPreferences.DEFAULT_PIN_SIZE)
     val textSize by settingsPreferences.textSizeSetting
@@ -134,10 +167,6 @@ fun MapScreen(
     }
 }
 
-/* -------------------------------------------------------------------- */
-/* -----------------------  Mapbox Composable  ------------------------ */
-/* -------------------------------------------------------------------- */
-
 @Composable
 fun MapboxComposeView(
     landmarks: List<Landmark>,
@@ -148,7 +177,6 @@ fun MapboxComposeView(
     val context = LocalContext.current
     val mapView = remember { MapView(context) }
 
-    /* Mapbox view lifecycle */
     DisposableEffect(Unit) {
         mapView.onStart()
         onDispose {
@@ -157,22 +185,18 @@ fun MapboxComposeView(
         }
     }
 
-    /* Annotation managers */
     val annotationApi = mapView.annotations
-    val userAnnotationManager =
-        remember { annotationApi.createPointAnnotationManager(AnnotationConfig("user_layer")) }
-    val landmarkAnnotationManager =
-        remember { annotationApi.createPointAnnotationManager(AnnotationConfig("landmark_layer")) }
-    val annotationsById = remember { mutableMapOf<String, Landmark>() }
-    var isLandmarkClickListenerAttached by remember { mutableStateOf(false) }
+    val userAnnotationManager = remember {
+        annotationApi.createPointAnnotationManager(AnnotationConfig("user_layer"))
+    }
 
-    /* Track user location and zoom once */
     var hasZoomedToUser by remember { mutableStateOf(false) }
     var userMarker by remember { mutableStateOf<PointAnnotation?>(null) }
-    var lastUserPoint by remember { mutableStateOf<Point?>(null) } // Store last user point
+    var lastUserPoint by remember { mutableStateOf<Point?>(null) }
+    var mapClickListener by remember { mutableStateOf<OnMapClickListener?>(null) }
+    var landmarkStyleRefs by remember { mutableStateOf<LandmarkStyleRefs?>(null) }
 
-    /* ---------- Location updates ---------- */
-    LaunchedEffect(mapView) { // Removed pinSize as key, will use current value
+    LaunchedEffect(mapView) {
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
         val request = LocationRequest.create().apply {
             interval = 5_000L
@@ -183,9 +207,11 @@ fun MapboxComposeView(
         val callback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 result.lastLocation ?: return
-                val point = Point.fromLngLat(result.lastLocation!!.longitude,
-                    result.lastLocation!!.latitude)
-                lastUserPoint = point // Update last user point
+                val point = Point.fromLngLat(
+                    result.lastLocation!!.longitude,
+                    result.lastLocation!!.latitude
+                )
+                lastUserPoint = point
 
                 mapView.getMapboxMap().getStyle { style ->
                     if (style.getStyleImage("ic_user_pin_scaled") == null) {
@@ -195,7 +221,7 @@ fun MapboxComposeView(
                     val opts = PointAnnotationOptions()
                         .withPoint(point)
                         .withIconImage("ic_user_pin_scaled")
-                        .withIconSize(pinSize.toDouble()) // Use pinSize
+                        .withIconSize(pinSize.toDouble())
                     userMarker?.let(userAnnotationManager::delete)
                     userMarker = userAnnotationManager.create(opts)
                 }
@@ -213,7 +239,6 @@ fun MapboxComposeView(
             ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
         ) {
-            println("Location permission not granted.")
             return@LaunchedEffect
         }
 
@@ -222,10 +247,8 @@ fun MapboxComposeView(
         fusedClient.removeLocationUpdates(callback)
     }
 
-    /* --- NEW: Effect to update user marker size when pinSize changes --- */
     LaunchedEffect(pinSize, userMarker) {
         userMarker?.let { marker ->
-            // Check if size actually needs updating to avoid unnecessary redraws
             if (marker.iconSize != pinSize.toDouble()) {
                 marker.iconSize = pinSize.toDouble()
                 userAnnotationManager.update(marker)
@@ -233,88 +256,50 @@ fun MapboxComposeView(
         }
     }
 
-    /* ---------- AndroidView wrapper with Overlays ---------- */
+    LaunchedEffect(mapView) {
+        mapView.getMapboxMap().loadStyleUri(Style.MAPBOX_STREETS) { style ->
+            loadLandmarkIcons(style, context)
+            landmarkStyleRefs = addLandmarkSourceAndLayers(style, pinSize, textSize)
+
+            mapClickListener?.let { mapView.gestures.removeOnMapClickListener(it) }
+            val listener = OnMapClickListener { clickedPoint ->
+                handleLandmarkTap(
+                    mapView = mapView,
+                    clickedPoint = clickedPoint,
+                    onLandmarkClick = onLandmarkClick
+                )
+                true
+            }
+            mapView.gestures.addOnMapClickListener(listener)
+            mapClickListener = listener
+        }
+    }
+
+    DisposableEffect(mapView) {
+        onDispose {
+            mapClickListener?.let { mapView.gestures.removeOnMapClickListener(it) }
+        }
+    }
+
+    LaunchedEffect(landmarks) {
+        updateLandmarkSource(landmarkStyleRefs, landmarks)
+    }
+
+    LaunchedEffect(pinSize, textSize) {
+        updateLandmarkLayerSizes(landmarkStyleRefs, pinSize, textSize)
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { mapView },
             modifier = Modifier.fillMaxSize(),
             update = { mv ->
-                mv.getMapboxMap().loadStyleUri(Style.MAPBOX_STREETS) { style ->
-                    /* preload landmark icons */
-                    listOf(
-                        "ic_landmark_blue" to R.drawable.ic_landmark_blue,
-                        "ic_landmark_yellow" to R.drawable.ic_landmark_yellow,
-                        "ic_landmark_red" to R.drawable.ic_landmark_red
-                    ).forEach { (name, res) ->
-                        if (style.getStyleImage(name) == null) {
-                            loadScaledBitmap(context, res, 80, 80)?.let { style.addImage(name, it) }
-                        }
-                    }
-
-                    mv.gestures.updateSettings {
-                        scrollEnabled = true
-                        pinchToZoomEnabled = true
-                        pitchEnabled = true
-                        rotateEnabled = true
-                    }
-
-                    landmarkAnnotationManager.deleteAll()
-
-                    if (!isLandmarkClickListenerAttached) {
-                        landmarkAnnotationManager.addClickListener { pa ->
-                            annotationsById[pa.id]?.let {
-                                onLandmarkClick(it)
-                                true
-                            } ?: false
-                        }
-                        isLandmarkClickListenerAttached = true
-                    }
-                    annotationsById.clear()
-
-                    val groupedByCoordinate = landmarks.groupBy { it.point.toJson() }
-                    val currentIndexByCoordinate = mutableMapOf<String, Int>()
-
-                    landmarks.forEach { lm ->
-                        val icon = when (lm.category.lowercase()) {
-                            "red" -> "ic_landmark_red"
-                            "yellow" -> "ic_landmark_yellow"
-                            else -> "ic_landmark_blue"
-                        }
-
-                        val coordinateKey = lm.point.toJson()
-                        val currentIndex = currentIndexByCoordinate.getOrDefault(coordinateKey, 0)
-                        currentIndexByCoordinate[coordinateKey] = currentIndex + 1
-                        val duplicatesAtPoint = groupedByCoordinate[coordinateKey]?.size ?: 1
-
-                        val renderedPoint = if (duplicatesAtPoint > 1) {
-                            val angle = (2 * PI * currentIndex) / duplicatesAtPoint
-                            val offset = 0.00018 // ~20 m to separate overlapping pins
-                            Point.fromLngLat(
-                                lm.point.longitude() + (offset * cos(angle)),
-                                lm.point.latitude() + (offset * sin(angle))
-                            )
-                        } else {
-                            lm.point
-                        }
-
-                        val opts = PointAnnotationOptions()
-                            .withPoint(renderedPoint)
-                            .withTextField(lm.title)
-                            .withIconImage(icon)
-                            .withIconSize(pinSize.toDouble()) // Use pinSize
-                            .withTextSize(textSize.toDouble())
-                            .withTextAnchor(TextAnchor.BOTTOM)
-                            .withTextOffset(listOf(0.0, -1.5))
-                            .withTextColor(AndroidColor.BLACK)
-                            .withTextHaloColor(AndroidColor.WHITE)
-                            .withTextHaloWidth(1.5)
-
-                        val annotation = landmarkAnnotationManager.create(opts)
-                        annotationsById[annotation.id] = lm
-                    }
+                mv.gestures.updateSettings {
+                    scrollEnabled = true
+                    pinchToZoomEnabled = true
+                    pitchEnabled = true
+                    rotateEnabled = true
                 }
-
-                /* allow map to intercept gestures */
                 mv.setOnTouchListener { _, _ ->
                     mv.parent?.requestDisallowInterceptTouchEvent(true)
                     false
@@ -322,7 +307,6 @@ fun MapboxComposeView(
             }
         )
 
-        /* --- NEW: Current Location Button --- */
         FloatingActionButton(
             onClick = {
                 lastUserPoint?.let {
@@ -343,7 +327,6 @@ fun MapboxComposeView(
             )
         }
 
-        /* --- NEW: Map Legend --- */
         MapLegend(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -352,15 +335,208 @@ fun MapboxComposeView(
     }
 }
 
-/* --- NEW: Map Legend Composable --- */
+private fun loadLandmarkIcons(style: Style, context: Context) {
+    listOf(
+        "ic_landmark_blue" to R.drawable.ic_landmark_blue,
+        "ic_landmark_yellow" to R.drawable.ic_landmark_yellow,
+        "ic_landmark_red" to R.drawable.ic_landmark_red
+    ).forEach { (name, res) ->
+        if (style.getStyleImage(name) == null) {
+            loadScaledBitmap(context, res, 80, 80)?.let { style.addImage(name, it) }
+        }
+    }
+}
+
+private fun addLandmarkSourceAndLayers(
+    style: Style,
+    pinSize: Float,
+    textSize: Float
+): LandmarkStyleRefs {
+    val source = geoJsonSource(LANDMARK_SOURCE_ID) {
+        featureCollection(FeatureCollection.fromFeatures(emptyList()))
+        cluster(true)
+        clusterRadius(50)
+        clusterMaxZoom(13)
+    }
+    style.addSource(source)
+
+    style.addLayer(
+        CircleLayer(CLUSTER_CIRCLE_LAYER_ID, LANDMARK_SOURCE_ID).apply {
+            filter(has("point_count"))
+            minZoom(0.0)
+            maxZoom(CLUSTER_ZOOM_MAX)
+            circleColor("#3B82F6")
+            circleRadius(
+                Expression.step(
+                    get("point_count"),
+                    literal(18.0),
+                    literal(15.0), literal(24.0),
+                    literal(40.0), literal(30.0)
+                )
+            )
+            circleOpacity(0.85)
+            circleStrokeColor("#FFFFFF")
+            circleStrokeWidth(2.0)
+        }
+    )
+
+    style.addLayer(
+        SymbolLayer(CLUSTER_COUNT_LAYER_ID, LANDMARK_SOURCE_ID).apply {
+            filter(has("point_count"))
+            minZoom(0.0)
+            maxZoom(CLUSTER_ZOOM_MAX)
+            textField(Expression.toString(get("point_count")))
+            textSize(12.0)
+            textColor("#FFFFFF")
+            textIgnorePlacement(true)
+            textAllowOverlap(true)
+        }
+    )
+
+    val blueLayer = addMarkerLayer(style, LANDMARK_ICON_LAYER_BLUE_ID, "blue", "ic_landmark_blue", pinSize)
+    val yellowLayer = addMarkerLayer(style, LANDMARK_ICON_LAYER_YELLOW_ID, "yellow", "ic_landmark_yellow", pinSize)
+    val redLayer = addMarkerLayer(style, LANDMARK_ICON_LAYER_RED_ID, "red", "ic_landmark_red", pinSize)
+
+    val labelLayer = SymbolLayer(LANDMARK_LABEL_LAYER_ID, LANDMARK_SOURCE_ID).apply {
+        filter(Expression.not(has("point_count")))
+        minZoom(LABEL_ZOOM_MIN)
+        textField(get("title"))
+        textSize(textSize.toDouble())
+        textAnchor(TextAnchor.TOP)
+        textOffset(listOf(0.0, 1.1))
+        textColor("#111111")
+        textHaloColor("#FFFFFF")
+        textHaloWidth(1.0)
+        textOptional(true)
+        textAllowOverlap(false)
+        textIgnorePlacement(false)
+    }
+    style.addLayer(labelLayer)
+
+    return LandmarkStyleRefs(
+        source = source,
+        blueLayer = blueLayer,
+        yellowLayer = yellowLayer,
+        redLayer = redLayer,
+        labelLayer = labelLayer
+    )
+}
+
+
+private fun addMarkerLayer(
+    style: Style,
+    layerId: String,
+    category: String,
+    iconImage: String,
+    pinSize: Float
+): SymbolLayer {
+    val layer = SymbolLayer(layerId, LANDMARK_SOURCE_ID).apply {
+        filter(
+            Expression.all(
+                Expression.not(has("point_count")),
+                Expression.eq(get("category"), literal(category))
+            )
+        )
+        minZoom(MEDIUM_ZOOM_MIN)
+        iconImage(iconImage)
+        iconSize(pinSize.toDouble())
+        iconAllowOverlap(true)
+        iconIgnorePlacement(true)
+    }
+    style.addLayer(layer)
+    return layer
+}
+private fun updateLandmarkSource(styleRefs: LandmarkStyleRefs?, landmarks: List<Landmark>) {
+    val source = styleRefs?.source ?: return
+    val features = landmarks.map { landmark ->
+        Feature.fromGeometry(landmark.point).apply {
+            addNumberProperty("id", landmark.id)
+            addStringProperty("title", landmark.title)
+            addStringProperty("details", landmark.details)
+            addStringProperty("category", landmark.category.lowercase())
+            addStringProperty("detailLine2", landmark.detailLine2 ?: "")
+            addStringProperty("popupImageName", landmark.popupImageName ?: "")
+        }
+    }
+    source.featureCollection(FeatureCollection.fromFeatures(features))
+}
+
+private fun updateLandmarkLayerSizes(styleRefs: LandmarkStyleRefs?, pinSize: Float, textSize: Float) {
+    styleRefs ?: return
+    styleRefs.blueLayer.iconSize(pinSize.toDouble())
+    styleRefs.yellowLayer.iconSize(pinSize.toDouble())
+    styleRefs.redLayer.iconSize(pinSize.toDouble())
+    styleRefs.labelLayer.textSize(textSize.toDouble())
+}
+
+private fun handleLandmarkTap(
+    mapView: MapView,
+    clickedPoint: Point,
+    onLandmarkClick: (Landmark) -> Unit
+) {
+    val mapboxMap = mapView.getMapboxMap()
+    val clickedPixel = mapboxMap.pixelForCoordinate(clickedPoint)
+
+    mapboxMap.queryRenderedFeatures(
+        RenderedQueryGeometry(clickedPixel),
+        RenderedQueryOptions(listOf(CLUSTER_CIRCLE_LAYER_ID), null)
+    ) { clusterResult ->
+        val clusterFeature = clusterResult.value?.firstOrNull()?.queriedFeature?.feature
+        if (clusterFeature != null) {
+            val clusterCenter = clusterFeature.geometry() as? Point
+            if (clusterCenter != null) {
+                val currentZoom = mapboxMap.cameraState.zoom
+                mapboxMap.setCamera(
+                    CameraOptions.Builder()
+                        .center(clusterCenter)
+                        .zoom(currentZoom + CLUSTER_TAP_ZOOM_STEP)
+                        .build()
+                )
+            }
+            return@queryRenderedFeatures
+        }
+
+        mapboxMap.queryRenderedFeatures(
+            RenderedQueryGeometry(clickedPixel),
+            RenderedQueryOptions(
+                listOf(
+                    LANDMARK_ICON_LAYER_BLUE_ID,
+                    LANDMARK_ICON_LAYER_YELLOW_ID,
+                    LANDMARK_ICON_LAYER_RED_ID,
+                    LANDMARK_LABEL_LAYER_ID
+                ),
+                null
+            )
+        ) { result ->
+            val feature = result.value?.firstOrNull()?.queriedFeature?.feature ?: return@queryRenderedFeatures
+            onLandmarkClick(feature.toLandmarkOrNull() ?: return@queryRenderedFeatures)
+        }
+    }
+}
+
+private fun Feature.toLandmarkOrNull(): Landmark? {
+    val point = geometry() as? Point ?: return null
+    val id = getNumberProperty("id")?.toInt() ?: return null
+
+    return Landmark(
+        id = id,
+        title = getStringProperty("title") ?: return null,
+        details = getStringProperty("details") ?: "",
+        point = point,
+        category = getStringProperty("category") ?: "blue",
+        popupImageName = getStringProperty("popupImageName").takeUnless { it.isNullOrBlank() },
+        detailLine2 = getStringProperty("detailLine2").takeUnless { it.isNullOrBlank() }
+    )
+}
+
 @Composable
 fun MapLegend(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         LegendItem(
             pinResId = R.drawable.ic_landmark_blue,
@@ -377,16 +553,15 @@ fun MapLegend(modifier: Modifier = Modifier) {
     }
 }
 
-/* --- NEW: Legend Item Composable --- */
 @Composable
 fun LegendItem(pinResId: Int, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Image(
             painter = painterResource(id = pinResId),
             contentDescription = label,
-            modifier = Modifier.size(24.dp) // Adjust size as needed
+            modifier = Modifier.size(20.dp)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
