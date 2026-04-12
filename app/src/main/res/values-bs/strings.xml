@@ -35,7 +35,6 @@
     <string name="landmark_popup_info_prefix">Info:</string>
     <string name="landmark_popup_details_prefix">Detalji:</string>
     <string name="landmark_popup_close_button">Zatvori</string>
-    <string name="landmark_accessibility_status">Status pristupačnosti:</string>
     <string name="landmark_image_description">%1$s slika</string>
 
     <string name="center_map_button_description">Centriraj na moju lokaciju</string>
