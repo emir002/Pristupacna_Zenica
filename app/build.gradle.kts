@@ -87,13 +87,9 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1") // Updated to a more recent version
 
     /* ---------- Mapbox – Using latest recommended (11.12.2) ------------- */
-    val mapboxVersion = "11.12.2" // Updated to the latest recommended stable version
-    implementation("com.mapbox.maps:android:$mapboxVersion") {
-        exclude(group = "androidx.constraintlayout", module = "constraintlayout")
-    }          // Core SDK
-    implementation("com.mapbox.extension:maps-compose:$mapboxVersion") {
-        exclude(group = "androidx.constraintlayout", module = "constraintlayout")
-    } // CORRECTED Group ID and Artifact ID
+    val mapboxVersion = "11.12.2"
+    implementation("com.mapbox.maps:android:$mapboxVersion")
+    implementation("com.mapbox.extension:maps-compose:$mapboxVersion")
 
     /* ---------- Kotlin Coroutines ------------------------------------- */
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0") // Updated to a more recent version
@@ -110,15 +106,14 @@ ksp {
    different one later.
    ------------------------------------------------------------------ */
 configurations.all {
+    // It's safe to keep the old support library exclusions, but remove the AndroidX one
     exclude(group = "com.android.support.constraint", module = "constraint-layout")
     exclude(group = "com.android.support.constraint", module = "constraint-layout-solver")
-    exclude(group = "androidx.constraintlayout", module = "constraintlayout")
 
     resolutionStrategy {
         eachDependency {
-            // Check only for the correct Mapbox group ID.
             if (requested.group == "com.mapbox.maps" ||
-                requested.group == "com.mapbox.extension") { // Add this check
+                requested.group == "com.mapbox.extension") {
                 useVersion("11.12.2")
             }
         }
