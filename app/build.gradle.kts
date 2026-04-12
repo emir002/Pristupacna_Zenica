@@ -87,8 +87,12 @@ dependencies {
 
     /* ---------- Mapbox – Using latest recommended (11.12.2) ------------- */
     val mapboxVersion = "11.12.2" // Updated to the latest recommended stable version
-    implementation("com.mapbox.maps:android:$mapboxVersion")          // Core SDK
-    implementation("com.mapbox.extension:maps-compose:$mapboxVersion") // CORRECTED Group ID and Artifact ID
+    implementation("com.mapbox.maps:android:$mapboxVersion") {
+        exclude(group = "androidx.constraintlayout", module = "constraintlayout")
+    }          // Core SDK
+    implementation("com.mapbox.extension:maps-compose:$mapboxVersion") {
+        exclude(group = "androidx.constraintlayout", module = "constraintlayout")
+    } // CORRECTED Group ID and Artifact ID
 
     /* ---------- Kotlin Coroutines ------------------------------------- */
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0") // Updated to a more recent version
@@ -105,6 +109,10 @@ ksp {
    different one later.
    ------------------------------------------------------------------ */
 configurations.all {
+    exclude(group = "com.android.support.constraint", module = "constraint-layout")
+    exclude(group = "com.android.support.constraint", module = "constraint-layout-solver")
+    exclude(group = "androidx.constraintlayout", module = "constraintlayout")
+
     resolutionStrategy {
         eachDependency {
             // Check only for the correct Mapbox group ID.
