@@ -318,54 +318,76 @@ fun MainScaffold(settingsPreferences: SettingsPreferences) {
                     }
                 }
                 selectedLandmark?.let { landmark ->
-                    LandmarkPopup(landmark = landmark, onDismiss = { selectedLandmark = null })
+                    LandmarkBottomSheet(
+                        landmark = landmark,
+                        onDismiss = { selectedLandmark = null }
+                    )
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LandmarkPopup(landmark: Landmark, onDismiss: () -> Unit) {
+fun LandmarkBottomSheet(landmark: Landmark, onDismiss: () -> Unit) {
     val imageResId = getDrawableResourceIdByName(landmark.popupImageName)
-    AlertDialog(
+
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text(text = landmark.title, style = MaterialTheme.typography.headlineSmall) },
-        text = {
-            Column(horizontalAlignment = Alignment.Start) {
-                imageResId?.let { resId ->
-                    Image(
-                        painter = painterResource(id = resId),
-                        contentDescription = stringResource(
-                            R.string.landmark_image_description,
-                            landmark.title
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .padding(bottom = 8.dp),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                Text(
-                    "${stringResource(R.string.landmark_popup_info_prefix)} ${landmark.details}",
-                    style = MaterialTheme.typography.bodyLarge
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(text = landmark.title, style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val accessibilityStatus = when (landmark.category.lowercase()) {
+                "blue" -> stringResource(R.string.legend_fully_accessible)
+                "yellow" -> stringResource(R.string.legend_partially_accessible)
+                "red" -> stringResource(R.string.legend_inaccessible)
+                else -> landmark.category
+            }
+            Text(
+                text = "${stringResource(R.string.landmark_accessibility_status)} $accessibilityStatus",
+                style = MaterialTheme.typography.titleSmall
+            )
+
+            imageResId?.let { resId ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Image(
+                    painter = painterResource(id = resId),
+                    contentDescription = stringResource(
+                        R.string.landmark_image_description,
+                        landmark.title
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                    contentScale = ContentScale.Crop
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                landmark.detailLine2?.let {
-                    Text(
-                        "${stringResource(R.string.landmark_popup_details_prefix)} $it",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
             }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text(stringResource(R.string.landmark_popup_close_button))
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "${stringResource(R.string.landmark_popup_info_prefix)} ${landmark.details}",
+                style = MaterialTheme.typography.bodyLarge
+            )
+
+            landmark.detailLine2?.takeIf { it.isNotBlank() }?.let {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "${stringResource(R.string.landmark_popup_details_prefix)} $it",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
-    )
+    }
 }
 
 @Composable

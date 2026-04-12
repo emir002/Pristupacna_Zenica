@@ -36,6 +36,7 @@
     <string name="landmark_popup_info_prefix">Info:</string>
     <string name="landmark_popup_details_prefix">Details:</string>
     <string name="landmark_popup_close_button">Close</string>
+    <string name="landmark_accessibility_status">Accessibility status:</string>
     <string name="landmark_image_description">%1$s image</string>
 
     <string name="center_map_button_description">Center on my location</string>
