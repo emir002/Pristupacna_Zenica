@@ -66,7 +66,11 @@ dependencies {
 
     /* ---------- Theme related ------------------------------------------ */
     // Add this for XML Material 3 themes like Theme.Material3.DayNight.NoActionBar
-    implementation("com.google.android.material:material:1.12.0") // Or a newer stable version
+    implementation("com.google.android.material:material:1.12.0") {
+        // Prevent duplicate ConstraintLayout classes during dex merge.
+        exclude(group = "androidx.constraintlayout", module = "constraintlayout")
+        exclude(group = "androidx.constraintlayout", module = "constraintlayout-solver")
+    } // Or a newer stable version
 
     // You should also still have the appcompat dependency from previous steps
     implementation("androidx.appcompat:appcompat:1.6.1") // Or a newer stable version
@@ -88,7 +92,11 @@ dependencies {
     /* ---------- Mapbox – Using latest recommended (11.12.2) ------------- */
     val mapboxVersion = "11.12.2" // Updated to the latest recommended stable version
     implementation("com.mapbox.maps:android:$mapboxVersion")          // Core SDK
-    implementation("com.mapbox.extension:maps-compose:$mapboxVersion") // CORRECTED Group ID and Artifact ID
+    implementation("com.mapbox.extension:maps-compose:$mapboxVersion") {
+        // Keep only one source of ConstraintLayout in the dependency graph.
+        exclude(group = "androidx.constraintlayout", module = "constraintlayout")
+        exclude(group = "androidx.constraintlayout", module = "constraintlayout-solver")
+    }
 
     /* ---------- Kotlin Coroutines ------------------------------------- */
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0") // Updated to a more recent version
