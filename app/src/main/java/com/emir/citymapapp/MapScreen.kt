@@ -90,6 +90,13 @@ private const val LABEL_ZOOM_MIN = 15.5
 private const val CLUSTER_ZOOM_MAX = 13.5
 
 private const val CLUSTER_TAP_ZOOM_STEP = 2.0
+private data class LandmarkStyleRefs(
+    val source: GeoJsonSource,
+    val blueLayer: SymbolLayer,
+    val yellowLayer: SymbolLayer,
+    val redLayer: SymbolLayer,
+    val labelLayer: SymbolLayer
+)
 
 data class Landmark(
     val id: Int,
@@ -187,6 +194,7 @@ fun MapboxComposeView(
     var userMarker by remember { mutableStateOf<PointAnnotation?>(null) }
     var lastUserPoint by remember { mutableStateOf<Point?>(null) }
     var mapClickListener by remember { mutableStateOf<OnMapClickListener?>(null) }
+    var landmarkStyleRefs by remember { mutableStateOf<LandmarkStyleRefs?>(null) }
 
     LaunchedEffect(mapView) {
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
@@ -251,7 +259,7 @@ fun MapboxComposeView(
     LaunchedEffect(mapView) {
         mapView.getMapboxMap().loadStyleUri(Style.MAPBOX_STREETS) { style ->
             loadLandmarkIcons(style, context)
-            addLandmarkSourceAndLayers(style, pinSize, textSize)
+            landmarkStyleRefs = addLandmarkSourceAndLayers(style, pinSize, textSize)
 
             mapClickListener?.let { mapView.gestures.removeOnMapClickListener(it) }
             val listener = OnMapClickListener { clickedPoint ->
@@ -274,15 +282,11 @@ fun MapboxComposeView(
     }
 
     LaunchedEffect(landmarks) {
-        mapView.getMapboxMap().getStyle { style ->
-            updateLandmarkSource(style, landmarks)
-        }
+        updateLandmarkSource(landmarkStyleRefs, landmarks)
     }
 
     LaunchedEffect(pinSize, textSize) {
-        mapView.getMapboxMap().getStyle { style ->
-            updateLandmarkLayerSizes(style, pinSize, textSize)
-        }
+        updateLandmarkLayerSizes(landmarkStyleRefs, pinSize, textSize)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -343,17 +347,18 @@ private fun loadLandmarkIcons(style: Style, context: Context) {
     }
 }
 
-private fun addLandmarkSourceAndLayers(style: Style, pinSize: Float, textSize: Float) {
-    if (style.styleSourceExists(LANDMARK_SOURCE_ID)) return
-
-    style.addSource(
-        geoJsonSource(LANDMARK_SOURCE_ID) {
-            featureCollection(FeatureCollection.fromFeatures(emptyList()))
-            cluster(true)
-            clusterRadius(50)
-            clusterMaxZoom(13)
-        }
-    )
+private fun addLandmarkSourceAndLayers(
+    style: Style,
+    pinSize: Float,
+    textSize: Float
+): LandmarkStyleRefs {
+    val source = geoJsonSource(LANDMARK_SOURCE_ID) {
+        featureCollection(FeatureCollection.fromFeatures(emptyList()))
+        cluster(true)
+        clusterRadius(50)
+        clusterMaxZoom(13)
+    }
+    style.addSource(source)
 
     style.addLayer(
         CircleLayer(CLUSTER_CIRCLE_LAYER_ID, LANDMARK_SOURCE_ID).apply {
@@ -388,25 +393,32 @@ private fun addLandmarkSourceAndLayers(style: Style, pinSize: Float, textSize: F
         }
     )
 
-    addMarkerLayer(style, LANDMARK_ICON_LAYER_BLUE_ID, "blue", "ic_landmark_blue", pinSize)
-    addMarkerLayer(style, LANDMARK_ICON_LAYER_YELLOW_ID, "yellow", "ic_landmark_yellow", pinSize)
-    addMarkerLayer(style, LANDMARK_ICON_LAYER_RED_ID, "red", "ic_landmark_red", pinSize)
+    val blueLayer = addMarkerLayer(style, LANDMARK_ICON_LAYER_BLUE_ID, "blue", "ic_landmark_blue", pinSize)
+    val yellowLayer = addMarkerLayer(style, LANDMARK_ICON_LAYER_YELLOW_ID, "yellow", "ic_landmark_yellow", pinSize)
+    val redLayer = addMarkerLayer(style, LANDMARK_ICON_LAYER_RED_ID, "red", "ic_landmark_red", pinSize)
 
-    style.addLayer(
-        SymbolLayer(LANDMARK_LABEL_LAYER_ID, LANDMARK_SOURCE_ID).apply {
-            filter(Expression.not(has("point_count")))
-            minZoom(LABEL_ZOOM_MIN)
-            textField(get("title"))
-            textSize(textSize.toDouble())
-            textAnchor(TextAnchor.TOP)
-            textOffset(listOf(0.0, 1.1))
-            textColor("#111111")
-            textHaloColor("#FFFFFF")
-            textHaloWidth(1.0)
-            textOptional(true)
-            textAllowOverlap(false)
-            textIgnorePlacement(false)
-        }
+    val labelLayer = SymbolLayer(LANDMARK_LABEL_LAYER_ID, LANDMARK_SOURCE_ID).apply {
+        filter(Expression.not(has("point_count")))
+        minZoom(LABEL_ZOOM_MIN)
+        textField(get("title"))
+        textSize(textSize.toDouble())
+        textAnchor(TextAnchor.TOP)
+        textOffset(listOf(0.0, 1.1))
+        textColor("#111111")
+        textHaloColor("#FFFFFF")
+        textHaloWidth(1.0)
+        textOptional(true)
+        textAllowOverlap(false)
+        textIgnorePlacement(false)
+    }
+    style.addLayer(labelLayer)
+
+    return LandmarkStyleRefs(
+        source = source,
+        blueLayer = blueLayer,
+        yellowLayer = yellowLayer,
+        redLayer = redLayer,
+        labelLayer = labelLayer
     )
 }
 
@@ -417,25 +429,25 @@ private fun addMarkerLayer(
     category: String,
     iconImage: String,
     pinSize: Float
-) {
-    style.addLayer(
-        SymbolLayer(layerId, LANDMARK_SOURCE_ID).apply {
-            filter(
-                Expression.all(
-                    Expression.not(has("point_count")),
-Expression.eq(get("category"), literal(category))
-                )
+): SymbolLayer {
+    val layer = SymbolLayer(layerId, LANDMARK_SOURCE_ID).apply {
+        filter(
+            Expression.all(
+                Expression.not(has("point_count")),
+                Expression.eq(get("category"), literal(category))
             )
-            minZoom(MEDIUM_ZOOM_MIN)
-            iconImage(iconImage)
-            iconSize(pinSize.toDouble())
-            iconAllowOverlap(true)
-            iconIgnorePlacement(true)
-        }
-    )
+        )
+        minZoom(MEDIUM_ZOOM_MIN)
+        iconImage(iconImage)
+        iconSize(pinSize.toDouble())
+        iconAllowOverlap(true)
+        iconIgnorePlacement(true)
+    }
+    style.addLayer(layer)
+    return layer
 }
-private fun updateLandmarkSource(style: Style, landmarks: List<Landmark>) {
-    val source = style.getStyleSource(LANDMARK_SOURCE_ID) as? GeoJsonSource ?: return
+private fun updateLandmarkSource(styleRefs: LandmarkStyleRefs?, landmarks: List<Landmark>) {
+    val source = styleRefs?.source ?: return
     val features = landmarks.map { landmark ->
         Feature.fromGeometry(landmark.point).apply {
             addNumberProperty("id", landmark.id)
@@ -449,11 +461,12 @@ private fun updateLandmarkSource(style: Style, landmarks: List<Landmark>) {
     source.featureCollection(FeatureCollection.fromFeatures(features))
 }
 
-private fun updateLandmarkLayerSizes(style: Style, pinSize: Float, textSize: Float) {
-    (style.getStyleLayer(LANDMARK_ICON_LAYER_BLUE_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
-    (style.getStyleLayer(LANDMARK_ICON_LAYER_YELLOW_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
-    (style.getStyleLayer(LANDMARK_ICON_LAYER_RED_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
-    (style.getStyleLayer(LANDMARK_LABEL_LAYER_ID) as? SymbolLayer)?.textSize(textSize.toDouble())
+private fun updateLandmarkLayerSizes(styleRefs: LandmarkStyleRefs?, pinSize: Float, textSize: Float) {
+    styleRefs ?: return
+    styleRefs.blueLayer.iconSize(pinSize.toDouble())
+    styleRefs.yellowLayer.iconSize(pinSize.toDouble())
+    styleRefs.redLayer.iconSize(pinSize.toDouble())
+    styleRefs.labelLayer.textSize(textSize.toDouble())
 }
 
 private fun handleLandmarkTap(
