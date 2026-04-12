@@ -70,6 +70,7 @@ dependencies {
 
     // You should also still have the appcompat dependency from previous steps
     implementation("androidx.appcompat:appcompat:1.6.1") // Or a newer stable version
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
 
     /* ---------- Google-Play location ----------------------------------- */
