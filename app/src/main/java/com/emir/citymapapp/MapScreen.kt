@@ -55,13 +55,22 @@ import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
+import com.mapbox.maps.RenderedQueryGeometry
 import com.mapbox.maps.ScreenCoordinate
 import com.mapbox.maps.Style
+import com.mapbox.maps.coroutine.queryRenderedFeatures
 import com.mapbox.maps.extension.style.expressions.generated.Expression
 import com.mapbox.maps.extension.style.layers.generated.CircleLayer
 import com.mapbox.maps.extension.style.layers.generated.SymbolLayer
 import com.mapbox.maps.extension.style.layers.properties.generated.TextAnchor
+import com.mapbox.maps.extension.style.layers.addLayer
+import com.mapbox.maps.extension.style.layers.addLayerAbove
+import com.mapbox.maps.extension.style.layers.getLayer
+import com.mapbox.maps.extension.style.layers.getLayerAs
+import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
+import com.mapbox.maps.extension.style.sources.getSource
+import com.mapbox.maps.extension.style.sources.getSourceAs
 import com.mapbox.maps.plugin.annotation.AnnotationConfig
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotation
@@ -71,7 +80,9 @@ import com.mapbox.maps.plugin.gestures.OnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import android.graphics.Color as AndroidColor
+import androidx.compose.runtime.rememberCoroutineScope
 
 private const val LANDMARKS_SOURCE_ID = "landmarks-source"
 private const val CLUSTER_LAYER_ID = "landmarks-clusters"
@@ -158,6 +169,7 @@ fun MapboxComposeView(
     val mapView = remember { MapView(context) }
     val latestOnLandmarkClick by rememberUpdatedState(onLandmarkClick)
     val landmarksById = remember(landmarks) { landmarks.associateBy { it.id } }
+    val coroutineScope = rememberCoroutineScope()
 
     DisposableEffect(Unit) {
         mapView.onStart()
@@ -199,37 +211,35 @@ fun MapboxComposeView(
 
     DisposableEffect(mapView, landmarksById) {
         val clickListener = OnMapClickListener { clickedPoint ->
-            val clickedFeature = mapView.getMapboxMap().queryRenderedFeatures(
-                ScreenCoordinate(
-                    mapView.getMapboxMap().pixelForCoordinate(clickedPoint).x,
-                    mapView.getMapboxMap().pixelForCoordinate(clickedPoint).y
-                ),
-                com.mapbox.maps.RenderedQueryOptions(
-                    listOf(CLUSTER_LAYER_ID, UNCLUSTERED_MARKERS_LAYER_ID),
-                    null
+            coroutineScope.launch {
+                val screenPoint = mapView.getMapboxMap().pixelForCoordinate(clickedPoint)
+                val queryResult = mapView.getMapboxMap().queryRenderedFeatures(
+                    RenderedQueryGeometry(ScreenCoordinate(screenPoint.x, screenPoint.y)),
+                    com.mapbox.maps.RenderedQueryOptions(
+                        listOf(CLUSTER_LAYER_ID, UNCLUSTERED_MARKERS_LAYER_ID),
+                        null
+                    )
                 )
-            ).value?.firstOrNull()?.queriedFeature?.feature
+                val clickedFeature = queryResult.value?.firstOrNull()?.queriedFeature?.feature
 
-            if (clickedFeature == null) {
-                false
-            } else if (clickedFeature.hasProperty("point_count")) {
-                mapView.getMapboxMap().easeTo(
-                    CameraOptions.Builder()
-                        .center((clickedFeature.geometry() as? Point) ?: clickedPoint)
-                        .zoom(mapView.getMapboxMap().cameraState.zoom + 1.5)
-                        .build()
-                )
-                true
-            } else {
-                val landmarkId = clickedFeature.getNumberProperty("landmark_id")?.toInt()
-                val landmark = landmarkId?.let(landmarksById::get)
-                if (landmark != null) {
-                    latestOnLandmarkClick(landmark)
-                    true
+                if (clickedFeature?.hasProperty("point_count") == true) {
+                    mapView.getMapboxMap().setCamera(
+                        CameraOptions.Builder()
+                            .center((clickedFeature.geometry() as? Point) ?: clickedPoint)
+                            .zoom(mapView.getMapboxMap().cameraState.zoom + 1.5)
+                            .build()
+                    )
                 } else {
-                    false
+                    val landmarkId = clickedFeature
+                        ?.getNumberProperty("landmark_id")
+                        ?.toInt()
+                    val landmark = landmarkId?.let(landmarksById::get)
+                    if (landmark != null) {
+                        latestOnLandmarkClick(landmark)
+                    }
                 }
             }
+            true
         }
         mapView.gestures.addOnMapClickListener(clickListener)
         onDispose {
@@ -388,18 +398,11 @@ private fun ensureLandmarkStyle(style: Style, context: Context, pinSize: Float) 
         )
     }
 
-    val iconExpression = Expression.match(
-        Expression.get("category"),
-        Expression.literal("red"), Expression.literal("ic_landmark_red"),
-        Expression.literal("yellow"), Expression.literal("ic_landmark_yellow"),
-        Expression.literal("ic_landmark_blue")
-    )
-
     if (style.getLayer(UNCLUSTERED_MARKERS_LAYER_ID) == null) {
         style.addLayer(
             SymbolLayer(UNCLUSTERED_MARKERS_LAYER_ID, LANDMARKS_SOURCE_ID)
                 .filter(Expression.not(Expression.has("point_count")))
-                .iconImage(iconExpression)
+                .iconImage(Expression.get("icon"))
                 .iconSize(pinSize.toDouble())
                 .iconAllowOverlap(false)
                 .iconIgnorePlacement(false)
@@ -444,6 +447,14 @@ private fun buildLandmarksFeatureCollection(landmarks: List<Landmark>): FeatureC
         Feature.fromGeometry(landmark.point).apply {
             addStringProperty("title", landmark.title)
             addStringProperty("category", landmark.category.lowercase())
+            addStringProperty(
+                "icon",
+                when (landmark.category.lowercase()) {
+                    "red" -> "ic_landmark_red"
+                    "yellow" -> "ic_landmark_yellow"
+                    else -> "ic_landmark_blue"
+                }
+            )
             addNumberProperty("landmark_id", landmark.id)
         }
     }
