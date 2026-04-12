@@ -374,9 +374,9 @@ private fun ensureLandmarkStyle(style: Style, context: Context, pinSize: Float) 
             CircleLayer(CLUSTER_LAYER_ID, LANDMARKS_SOURCE_ID)
                 .circleColor(Expression.step(
                     Expression.get("point_count"),
-                    Expression.color("#8AB4F8"),
-                    Expression.literal(20), Expression.color("#5E97F6"),
-                    Expression.literal(50), Expression.color("#3F7DE0")
+                    Expression.color(AndroidColor.parseColor("#8AB4F8")),
+                    Expression.literal(20), Expression.color(AndroidColor.parseColor("#5E97F6")),
+                    Expression.literal(50), Expression.color(AndroidColor.parseColor("#3F7DE0"))
                 ))
                 .circleRadius(Expression.step(
                     Expression.get("point_count"),
