@@ -56,6 +56,7 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.RenderedQueryGeometry
+import com.mapbox.maps.ScreenBox
 import com.mapbox.maps.ScreenCoordinate
 import com.mapbox.maps.Style
 import com.mapbox.maps.extension.style.expressions.dsl.generated.get
@@ -285,9 +286,18 @@ fun MapboxComposeView(
                     return@queryRenderedFeatures
                 }
 
+                val tapRadiusPx = 24.0
+                val tapBox = ScreenBox(
+                    ScreenCoordinate(screenCoordinate.x - tapRadiusPx, screenCoordinate.y - tapRadiusPx),
+                    ScreenCoordinate(screenCoordinate.x + tapRadiusPx, screenCoordinate.y + tapRadiusPx)
+                )
+
                 mapboxMap.queryRenderedFeatures(
-                    RenderedQueryGeometry(screenCoordinate),
-                    com.mapbox.maps.RenderedQueryOptions(listOf(LANDMARK_HIT_LAYER_ID), null)
+                    RenderedQueryGeometry(tapBox),
+                    com.mapbox.maps.RenderedQueryOptions(
+                        listOf(LANDMARK_HIT_LAYER_ID, LANDMARK_MARKER_LAYER_ID),
+                        null
+                    )
                 ) { markerResult ->
                     val markerFeature = markerResult.value?.firstOrNull()?.queriedFeature?.feature
                     val landmarkId = markerFeature?.getNumberProperty("landmarkId")?.toInt()
