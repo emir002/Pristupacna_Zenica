@@ -55,6 +55,7 @@ import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
+import com.mapbox.maps.RenderedQueryGeometry
 import com.mapbox.maps.ScreenCoordinate
 import com.mapbox.maps.Style
 import com.mapbox.maps.extension.style.expressions.dsl.generated.get
@@ -265,7 +266,7 @@ fun MapboxComposeView(
             val screenCoordinate: ScreenCoordinate = mapboxMap.pixelForCoordinate(point)
 
             mapboxMap.queryRenderedFeatures(
-                screenCoordinate,
+                RenderedQueryGeometry(screenCoordinate),
                 com.mapbox.maps.RenderedQueryOptions(listOf(LANDMARK_CLUSTER_CIRCLE_LAYER_ID), null)
             ) { clusterResult ->
                 val clusterFeature = clusterResult.value?.firstOrNull()?.queriedFeature?.feature
@@ -273,7 +274,7 @@ fun MapboxComposeView(
                     val centerPoint = clusterFeature.geometry() as? Point
                     if (centerPoint != null) {
                         val nextZoom = (mapboxMap.cameraState.zoom + CLUSTER_TAP_ZOOM_DELTA).coerceAtMost(19.0)
-                        mapboxMap.easeTo(
+                        mapboxMap.setCamera(
                             CameraOptions.Builder()
                                 .center(centerPoint)
                                 .zoom(nextZoom)
@@ -284,7 +285,7 @@ fun MapboxComposeView(
                 }
 
                 mapboxMap.queryRenderedFeatures(
-                    screenCoordinate,
+                    RenderedQueryGeometry(screenCoordinate),
                     com.mapbox.maps.RenderedQueryOptions(listOf(LANDMARK_MARKER_LAYER_ID), null)
                 ) { markerResult ->
                     val markerFeature = markerResult.value?.firstOrNull()?.queriedFeature?.feature
@@ -432,7 +433,7 @@ private fun setupLandmarkLayers(style: Style) {
     if (style.getLayer(LANDMARK_MARKER_LAYER_ID) == null) {
         style.addLayer(
             symbolLayer(LANDMARK_MARKER_LAYER_ID, LANDMARK_SOURCE_ID) {
-                filter(not(has("point_count")))
+                filter(not { has("point_count") })
                 minZoom(CLUSTER_MAX_ZOOM)
                 iconImage(get("iconImage"))
                 iconSize(1.0)
@@ -448,7 +449,7 @@ private fun setupLandmarkLayers(style: Style) {
     if (style.getLayer(LANDMARK_LABEL_LAYER_ID) == null) {
         style.addLayer(
             symbolLayer(LANDMARK_LABEL_LAYER_ID, LANDMARK_SOURCE_ID) {
-                filter(not(has("point_count")))
+                filter(not { has("point_count") })
                 minZoom(LABEL_MIN_ZOOM)
                 textField(get("title"))
                 textSize(12.0)
@@ -458,7 +459,7 @@ private fun setupLandmarkLayers(style: Style) {
                 textAnchor(TextAnchor.TOP)
                 textOffset(listOf(0.0, 1.2))
                 textMaxWidth(10.0)
-                textVariableAnchor(listOf(TextAnchor.TOP, TextAnchor.LEFT, TextAnchor.RIGHT))
+                textVariableAnchor(listOf("top", "left", "right"))
                 textJustify(TextJustify.AUTO)
                 textOptional(true)
                 textAllowOverlap(false)
