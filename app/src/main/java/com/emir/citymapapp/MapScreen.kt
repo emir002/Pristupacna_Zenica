@@ -318,7 +318,7 @@ fun MapboxComposeView(
     AndroidView(
         factory = {
             mapView.apply {
-                getMapboxMap().loadStyleUri(Style.MAPBOX_STREETS) { style ->
+                getMapboxMap().loadStyleUri("mapbox://styles/mapbox/light-v11") { style ->
                     addLandmarkImages(style, context)
                     setupLandmarkLayers(style)
                     updateLandmarkSource(style, landmarks, landmarkById)
