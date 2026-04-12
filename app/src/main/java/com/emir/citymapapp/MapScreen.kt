@@ -435,7 +435,7 @@ Expression.eq(get("category"), literal(category))
     )
 }
 private fun updateLandmarkSource(style: Style, landmarks: List<Landmark>) {
-    val source = style.getSource(LANDMARK_SOURCE_ID) as? GeoJsonSource ?: return
+    val source = style.getStyleSource(LANDMARK_SOURCE_ID) as? GeoJsonSource ?: return
     val features = landmarks.map { landmark ->
         Feature.fromGeometry(landmark.point).apply {
             addNumberProperty("id", landmark.id)
@@ -450,10 +450,10 @@ private fun updateLandmarkSource(style: Style, landmarks: List<Landmark>) {
 }
 
 private fun updateLandmarkLayerSizes(style: Style, pinSize: Float, textSize: Float) {
-    (style.getLayer(LANDMARK_ICON_LAYER_BLUE_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
-    (style.getLayer(LANDMARK_ICON_LAYER_YELLOW_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
-    (style.getLayer(LANDMARK_ICON_LAYER_RED_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
-    (style.getLayer(LANDMARK_LABEL_LAYER_ID) as? SymbolLayer)?.textSize(textSize.toDouble())
+    (style.getStyleLayer(LANDMARK_ICON_LAYER_BLUE_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
+    (style.getStyleLayer(LANDMARK_ICON_LAYER_YELLOW_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
+    (style.getStyleLayer(LANDMARK_ICON_LAYER_RED_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
+    (style.getStyleLayer(LANDMARK_LABEL_LAYER_ID) as? SymbolLayer)?.textSize(textSize.toDouble())
 }
 
 private fun handleLandmarkTap(
