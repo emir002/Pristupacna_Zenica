@@ -91,13 +91,6 @@ data class Landmark(
     val detailLine2: String? = null
 )
 
-private data class LandmarkCluster(
-    val id: String,
-    val point: Point,
-    val count: Int,
-    val landmarks: List<Landmark>
-)
-
 fun LandmarkEntity.toLandmark(): Landmark =
     Landmark(
         id = id,
@@ -288,6 +281,7 @@ fun MapboxComposeView(
             ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
         ) {
+            println("Location permission not granted.")
             return@LaunchedEffect
         }
 
