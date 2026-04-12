@@ -43,6 +43,7 @@
     <string name="legend_fully_accessible">Potpuno pristupačno</string>
     <string name="legend_partially_accessible">Djelimično pristupačno</string>
     <string name="legend_inaccessible">Nepristupačno</string>
+    <string name="landmark_status_label">Status pristupačnosti:</string>
 
     <string name="startup_warning_title">Prvo pokretanje</string>
     <string name="startup_warning_message">Aplikacija se starta prvi put. Mapa će biti preuzeta na Vaš uređaj, što može dovesti do potrošnje podataka. Želite li nastaviti?</string>
