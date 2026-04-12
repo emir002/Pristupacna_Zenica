@@ -66,10 +66,7 @@ import com.mapbox.maps.extension.style.layers.generated.SymbolLayer
 import com.mapbox.maps.extension.style.layers.properties.generated.TextAnchor
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
-import com.mapbox.maps.extension.style.sources.generated.clusterMaxZoom
-import com.mapbox.maps.extension.style.sources.generated.clusterRadius
-import com.mapbox.maps.extension.style.sources.generated.cluster
-import com.mapbox.maps.extension.style.sources.generated.data
+import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.plugin.annotation.AnnotationConfig
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotation
@@ -350,11 +347,11 @@ private fun addLandmarkSourceAndLayers(style: Style, pinSize: Float, textSize: F
     if (style.styleSourceExists(LANDMARK_SOURCE_ID)) return
 
     style.addSource(
-        GeoJsonSource(LANDMARK_SOURCE_ID) {
-            data(FeatureCollection.fromFeatures(emptyList()))
+        geoJsonSource(LANDMARK_SOURCE_ID) {
+            featureCollection(FeatureCollection.fromFeatures(emptyList()))
             cluster(true)
-            clusterRadius(50L)
-            clusterMaxZoom(13L)
+            clusterRadius(50)
+            clusterMaxZoom(13)
         }
     )
 
@@ -438,7 +435,7 @@ Expression.eq(get("category"), literal(category))
     )
 }
 private fun updateLandmarkSource(style: Style, landmarks: List<Landmark>) {
-    val source = style.getSourceAs<GeoJsonSource>(LANDMARK_SOURCE_ID) ?: return
+    val source = style.getSource(LANDMARK_SOURCE_ID) as? GeoJsonSource ?: return
     val features = landmarks.map { landmark ->
         Feature.fromGeometry(landmark.point).apply {
             addNumberProperty("id", landmark.id)
@@ -453,10 +450,10 @@ private fun updateLandmarkSource(style: Style, landmarks: List<Landmark>) {
 }
 
 private fun updateLandmarkLayerSizes(style: Style, pinSize: Float, textSize: Float) {
-    style.getLayerAs<SymbolLayer>(LANDMARK_ICON_LAYER_BLUE_ID)?.iconSize(pinSize.toDouble())
-    style.getLayerAs<SymbolLayer>(LANDMARK_ICON_LAYER_YELLOW_ID)?.iconSize(pinSize.toDouble())
-    style.getLayerAs<SymbolLayer>(LANDMARK_ICON_LAYER_RED_ID)?.iconSize(pinSize.toDouble())
-    style.getLayerAs<SymbolLayer>(LANDMARK_LABEL_LAYER_ID)?.textSize(textSize.toDouble())
+    (style.getLayer(LANDMARK_ICON_LAYER_BLUE_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
+    (style.getLayer(LANDMARK_ICON_LAYER_YELLOW_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
+    (style.getLayer(LANDMARK_ICON_LAYER_RED_ID) as? SymbolLayer)?.iconSize(pinSize.toDouble())
+    (style.getLayer(LANDMARK_LABEL_LAYER_ID) as? SymbolLayer)?.textSize(textSize.toDouble())
 }
 
 private fun handleLandmarkTap(
@@ -476,7 +473,7 @@ private fun handleLandmarkTap(
             val clusterCenter = clusterFeature.geometry() as? Point
             if (clusterCenter != null) {
                 val currentZoom = mapboxMap.cameraState.zoom
-                mapboxMap.easeTo(
+                mapboxMap.setCamera(
                     CameraOptions.Builder()
                         .center(clusterCenter)
                         .zoom(currentZoom + CLUSTER_TAP_ZOOM_STEP)
