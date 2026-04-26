@@ -507,15 +507,67 @@ fun SettingSlider(
 @Composable
 fun AboutScreen() {
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
         Text(stringResource(R.string.about_title), style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
         Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.about_version), style = MaterialTheme.typography.bodyMedium)
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(stringResource(R.string.about_info_organization), style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.about_info_address), style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.about_info_phone), style = MaterialTheme.typography.bodyMedium)
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(stringResource(R.string.about_info_funding), style = MaterialTheme.typography.bodyMedium)
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo1),
+                contentDescription = stringResource(R.string.about_logo1_description),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(72.dp)
+            )
+            Image(
+                painter = painterResource(id = R.drawable.logo2),
+                contentDescription = stringResource(R.string.about_logo2_description),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(72.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo3),
+                contentDescription = stringResource(R.string.about_logo3_description),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(72.dp)
+            )
+            Image(
+                painter = painterResource(id = R.drawable.logo4),
+                contentDescription = stringResource(R.string.about_logo4_description),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(72.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Text(stringResource(R.string.about_developed_by))
         Text(

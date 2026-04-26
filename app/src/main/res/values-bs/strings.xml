@@ -27,7 +27,15 @@
     <string name="settings_language">Jezik</string>
 
     <string name="about_title">O aplikaciji</string>
-    <string name="about_version">Verzija 1.0 (2025)</string>
+    <string name="about_version">Verzija 1.0 (2026)</string>
+    <string name="about_info_organization">Koalicija organizacija osoba sa invaliditetom ZDK</string>
+    <string name="about_info_address">1. Zeničke brigade 13B</string>
+    <string name="about_info_phone">032/205-700</string>
+    <string name="about_info_funding">Finansirano kroz projekat DISC koga provodi Caritas BiH finansiran od strane Europske unije.</string>
+    <string name="about_logo1_description">Logo 1</string>
+    <string name="about_logo2_description">Logo 2</string>
+    <string name="about_logo3_description">Logo 3</string>
+    <string name="about_logo4_description">Logo 4</string>
     <string name="about_developed_by">Razvijeno od strane GraphForge © Emir Hasanica</string>
     <string name="about_contact">emir002@yahoo.com</string>
     <string name="about_mapbox_info">Ova aplikacija koristi Mapbox za usluge mapiranja.</string>
