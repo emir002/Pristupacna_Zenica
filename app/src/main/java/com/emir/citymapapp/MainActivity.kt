@@ -341,6 +341,7 @@ fun LandmarkBottomSheet(landmark: Landmark, onDismiss: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(text = landmark.title, style = MaterialTheme.typography.headlineSmall)
