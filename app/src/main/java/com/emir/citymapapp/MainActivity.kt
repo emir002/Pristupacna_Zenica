@@ -513,7 +513,7 @@ fun AboutScreen() {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(16.dp)
+            .padding(horizontal = 20.dp, vertical = 18.dp)
     ) {
         Text(stringResource(R.string.about_title), style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
@@ -528,7 +528,7 @@ fun AboutScreen() {
         Spacer(modifier = Modifier.height(16.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo1),
@@ -536,7 +536,7 @@ fun AboutScreen() {
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .weight(1f)
-                    .height(72.dp)
+                    .height(80.dp)
             )
             Image(
                 painter = painterResource(id = R.drawable.logo2),
@@ -544,13 +544,13 @@ fun AboutScreen() {
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .weight(1f)
-                    .height(72.dp)
+                    .height(80.dp)
             )
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo3),
@@ -558,7 +558,7 @@ fun AboutScreen() {
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .weight(1f)
-                    .height(72.dp)
+                    .height(80.dp)
             )
             Image(
                 painter = painterResource(id = R.drawable.logo4),
@@ -566,10 +566,10 @@ fun AboutScreen() {
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .weight(1f)
-                    .height(72.dp)
+                    .height(80.dp)
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Text(stringResource(R.string.about_developed_by))
         Text(
             text = stringResource(R.string.about_contact),
