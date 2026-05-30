@@ -17,7 +17,7 @@ android {
         applicationId = "com.emir.citymapapp"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
+        versionCode = 3
         versionName = "1.2"
     }
 
