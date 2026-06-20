@@ -17,7 +17,7 @@ android {
         applicationId = "com.emir.citymapapp"
         minSdk = 24
         targetSdk = 35
-        versionCode = 4
+        versionCode = 5
         versionName = "1.2"
     }
 
@@ -88,8 +88,8 @@ dependencies {
 
     /* ---------- Mapbox – Using latest recommended (11.12.2) ------------- */
     val mapboxVersion = "11.12.2"
-    implementation("com.mapbox.maps:android:$mapboxVersion")
-    implementation("com.mapbox.extension:maps-compose:$mapboxVersion")
+    implementation("com.mapbox.maps:android-ndk27:$mapboxVersion")
+    implementation("com.mapbox.extension:maps-compose-ndk27:$mapboxVersion")
 
     /* ---------- Kotlin Coroutines ------------------------------------- */
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0") // Updated to a more recent version
